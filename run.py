@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys
 import os
@@ -39,9 +39,9 @@ try:
 
     # start machinekit
     if not args.lathe:
-        launcher.start_process('machinekit mkwrapper.ini')
+        launcher.start_process('linuxcnc mkwrapper.ini')
     else:
-        launcher.start_process('machinekit lathe.ini')
+        launcher.start_process('linuxcnc lathe.ini')
 
     if args.halscope:
         # load scope only now - because all sigs are now defined:
