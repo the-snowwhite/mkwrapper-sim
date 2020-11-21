@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 
 import sys
 import os
@@ -6,6 +6,14 @@ import subprocess
 import argparse
 import time
 from machinekit import launcher
+from machinekit import config
+
+def check_mklaucher():
+    try:
+        subprocess.check_output(['pgrep', 'mklauncher'])
+        return True
+    except subprocess.CalledProcessError:
+        return False
 
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
@@ -23,6 +31,10 @@ args = parser.parse_args()
 if args.debug:
     launcher.set_debug_level(5)
 
+if 'MACHINEKIT_INI' not in os.environ:  # export for package installs
+    mkconfig = config.Config()
+    os.environ['MACHINEKIT_INI'] = mkconfig.MACHINEKIT_INI
+
 try:
     launcher.check_installation()
     launcher.cleanup_session()
@@ -32,16 +44,15 @@ try:
     if not os.path.exists(nc_path):
         os.mkdir(nc_path)
 
-    launcher.ensure_mklauncher()
+    if not check_mklaucher():  # start mklauncher if not running to make things easier
+        launcher.start_process('mklauncher ~/Hm2-soc_FDM/Cramps/PY/FZ3')
 
-    # the point-of-contact for QtQUickVCP
-    launcher.start_process('configserver -n mkwrapper-Demo . ~/projects/Machineface ~/projects/Cetus %s' % args.path)
+    launcher.start_process("configserver -n mkwrapper-Demo ~/Cetus/ ~/Machineface ")
 
-    # start machinekit
     if not args.lathe:
-        launcher.start_process('machinekit mkwrapper.ini')
+        launcher.start_process('linuxcnc mkwrapper.ini')
     else:
-        launcher.start_process('machinekit lathe.ini')
+        launcher.start_process('linuxcnc lathe.ini')
 
     if args.halscope:
         # load scope only now - because all sigs are now defined:
@@ -52,7 +63,6 @@ try:
     while True:
         launcher.check_processes()
         time.sleep(1)
-
 except subprocess.CalledProcessError:
     launcher.end_session()
     sys.exit(1)
